@@ -94,7 +94,6 @@ class PDFEspelho(FPDF):
         self.set_auto_page_break(auto=True, margin=10)
         
     def header(self):
-        # Desenhado dinamicamente para não bugar páginas de rodapé
         pass
 
 def desenhar_equipe(pdf, equipe, df_equipe, ordens_manuais, hoje_date):
@@ -147,7 +146,6 @@ def desenhar_equipe(pdf, equipe, df_equipe, ordens_manuais, hoje_date):
     pdf.cell(0, 5, f"Setor da Equipe: {pdf.setor_equipe}", border=0, ln=1, align='L')
     pdf.ln(3)
 
-    # Cabeçalho da Tabela
     pdf.set_font('Arial', 'B', 7)
     pdf.set_fill_color(220, 220, 220) 
     for i in range(len(headers)):
@@ -155,7 +153,7 @@ def desenhar_equipe(pdf, equipe, df_equipe, ordens_manuais, hoje_date):
     pdf.ln()
     
     # =========================================================
-    # --- GERAÇÃO DA TABELA (ZEBRADO) ---
+    # --- GERAÇÃO DA TABELA (ZEBRADO E DESTAQUES) ---
     # =========================================================
     lista_resumo_prioridades = []
     
@@ -275,15 +273,12 @@ def desenhar_equipe(pdf, equipe, df_equipe, ordens_manuais, hoje_date):
         if i < linhas_pauta - 1:
             pdf.line(117, pdf.get_y(), 283, pdf.get_y())
 
-
 def gerar_pdf_individual(equipe, df_equipe, ordens_manuais, hoje_date, data_hoje_str):
     pdf = PDFEspelho(data_atual=data_hoje_str)
     desenhar_equipe(pdf, equipe, df_equipe, ordens_manuais, hoje_date)
     return pdf.output(dest='S').encode('latin1')
 
-
 def gerar_pdf_mestre(equipes_agrupadas, ordens_manuais, hoje_date, data_hoje_str):
-    """Gera um único arquivo PDF contendo todas as equipes em sequência (Ideal para imprimir)."""
     pdf = PDFEspelho(data_atual=data_hoje_str)
     for equipe, df_equipe in equipes_agrupadas:
         desenhar_equipe(pdf, equipe, df_equipe, ordens_manuais, hoje_date)
@@ -329,9 +324,59 @@ if uploaded_file is not None:
                 df_final['Coordenadas'] = ''
 
             df_final['Data_Prazo_Obj'] = pd.to_datetime(df_final['Prazo ANS Legal'], errors='coerce', dayfirst=True).dt.date
-            equipes_agrupadas = df_final.groupby('Equipe')
+            
+            df_final['Setor_Equipe'] = df_final['Equipe'].map(PREFIXOS_DICT)
+            setores_disponiveis = sorted([str(s) for s in df_final['Setor_Equipe'].unique() if pd.notna(s)])
 
-        st.success(f"Base Pronta! {len(equipes_agrupadas)} equipes encontradas para geração.")
+        st.success("Base processada com sucesso!")
+        st.markdown("---")
+
+        # =========================================================
+        # --- SELEÇÃO DE FILTROS: SETOR ➔ EQUIPES ---
+        # =========================================================
+        st.markdown("#### Filtros de Impressão")
+        
+        setores_selecionados = st.multiselect(
+            "1. Filtrar por Setor (Opcional):",
+            options=setores_disponiveis,
+            placeholder="Selecione um ou mais setores para filtrar as equipes..."
+        )
+        
+        if setores_selecionados:
+            df_filtrado_setor = df_final[df_final['Setor_Equipe'].isin(setores_selecionados)]
+        else:
+            df_filtrado_setor = df_final
+            
+        equipes_disponiveis = sorted(df_filtrado_setor['Equipe'].unique())
+        
+        st.write("2. Selecionar Equipes:")
+        
+        # CHAVE MESTRA: Opção de Selecionar Tudo
+        selecionar_todas = st.checkbox("**Selecionar tudo**", value=False)
+        st.write("") 
+        
+        equipes_selecionadas = []
+        cols = st.columns(4) 
+        
+        for idx, equipe in enumerate(equipes_disponiveis):
+            with cols[idx % 4]: 
+                if selecionar_todas:
+                    # Trava visualmente as opções como verdadeiras se o botão Mestre estiver ativo
+                    st.checkbox(equipe, value=True, disabled=True, key=f"lock_{equipe}")
+                    equipes_selecionadas.append(equipe)
+                else:
+                    # Deixa livre para o utilizador escolher
+                    if st.checkbox(equipe, value=False, key=f"free_{equipe}"):
+                        equipes_selecionadas.append(equipe)
+
+        # Se o utilizador desmarcar todas, o programa para a interface aqui mesmo de forma suave
+        if not equipes_selecionadas:
+            st.info("👆 Selecione pelo menos uma equipe acima para liberar as opções de visualização e exportação.")
+            st.stop()
+
+        df_geracao = df_filtrado_setor[df_filtrado_setor['Equipe'].isin(equipes_selecionadas)]
+        equipes_agrupadas_geracao = df_geracao.groupby('Equipe')
+
         st.markdown("---")
 
         # =========================================================
@@ -340,14 +385,13 @@ if uploaded_file is not None:
         col1, col2 = st.columns([2.5, 1])
 
         with col1:
-            st.markdown("#### 👁️ Pré-visualização")
-            equipes_disponiveis = sorted(df_final['Equipe'].unique())
-            equipe_preview = st.selectbox("Selecione a Equipe para visualizar:", equipes_disponiveis)
+            st.markdown("#### Pré-visualização")
+            # A pré-visualização agora só mostra as equipes ativas no filtro acima
+            equipe_preview = st.selectbox("Selecione a Equipe para visualizar:", sorted(equipes_selecionadas))
 
             if equipe_preview:
                 df_equipe_preview = df_final[df_final['Equipe'] == equipe_preview]
                 
-                # Gera o PDF individual só para jogar na tela
                 pdf_bytes_preview = gerar_pdf_individual(equipe_preview, df_equipe_preview, ordens_manuais, hoje_date, data_hoje_str)
                 base64_pdf = base64.b64encode(pdf_bytes_preview).decode('utf-8')
                 pdf_display = f'<iframe src="data:application/pdf;base64,{base64_pdf}#view=FitH" width="100%" height="500" type="application/pdf" style="border: 1px solid #ccc; border-radius: 5px;"></iframe>'
@@ -355,12 +399,13 @@ if uploaded_file is not None:
 
         with col2:
             st.markdown("#### 🖨️ Exportação dos espelhos (pdf)")
-            st.write("Escolha a melhor forma de gerar o arquivo final de acordo com a sua necessidade:")
+            qtd_geracao = len(equipes_agrupadas_geracao)
+            st.write(f"Gerando espelhos para **{qtd_geracao}** equipe(s).")
             
             st.markdown("**Opção 1:** O sistema junta tudo em um único arquivo PDF. Ideal para imprimir de uma vez.")
             if st.button("Gerar Arquivo Único (Para Impressão)", use_container_width=True):
-                with st.spinner("Gerando PDF Mestre com todas as equipes..."):
-                    pdf_bytes_mestre = gerar_pdf_mestre(equipes_agrupadas, ordens_manuais, hoje_date, data_hoje_str)
+                with st.spinner("Gerando PDF Mestre com as equipes selecionadas..."):
+                    pdf_bytes_mestre = gerar_pdf_mestre(equipes_agrupadas_geracao, ordens_manuais, hoje_date, data_hoje_str)
                     
                     st.download_button(
                         label="📥 Descarregar PDF Único para Impressão",
@@ -376,7 +421,7 @@ if uploaded_file is not None:
                 with st.spinner("Empacotando os espelhos separados..."):
                     zip_buffer = io.BytesIO()
                     with zipfile.ZipFile(zip_buffer, "a", zipfile.ZIP_DEFLATED, False) as zip_file:
-                        for equipe, df_equipe in equipes_agrupadas:
+                        for equipe, df_equipe in equipes_agrupadas_geracao:
                             setor_equipe = PREFIXOS_DICT.get(equipe, "Desconhecido")
                             pdf_bytes = gerar_pdf_individual(equipe, df_equipe, ordens_manuais, hoje_date, data_hoje_str)
                             
