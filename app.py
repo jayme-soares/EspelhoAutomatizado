@@ -386,7 +386,7 @@ if uploaded_file is not None:
         col1, col2 = st.columns([2.5, 1])
 
         with col1:
-            st.markdown("#### 👁️ Pré-visualização")
+            st.markdown("#### Pré-visualização")
             # A pré-visualização agora só mostra as equipes ativas no filtro acima
             equipe_preview = st.selectbox("Selecione a Equipe para visualizar:", sorted(equipes_selecionadas))
 
