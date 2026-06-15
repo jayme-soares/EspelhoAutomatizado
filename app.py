@@ -107,7 +107,7 @@ def desenhar_equipe(pdf, equipe, df_equipe, ordens_manuais, hoje_date):
     pdf.add_page() # Inicia uma nova folha para esta equipe
 
     headers = ['Cód TdC', 'Nº Serviço', 'Tipo Serviço', 'Cód Cliente', 'Nome Cliente', 'Endereço', 'Bairro', 'Coord', 'Medidor', 'Prazo', 'Setor']
-    col_widths = [13, 17, 30, 15, 42, 50, 25, 17, 20, 15, 22]
+    col_widths = [13, 17, 39, 15, 42, 50, 25, 17, 20, 15, 22]
     
     linhas_processadas = []
     for _, row in df_equipe.iterrows():
@@ -138,9 +138,9 @@ def desenhar_equipe(pdf, equipe, df_equipe, ordens_manuais, hoje_date):
     # =========================================================
     # --- GERAÇÃO DO CABEÇALHO DA PÁGINA ---
     # =========================================================
-    pdf.set_font('Arial', 'B', 14)
-    pdf.cell(0, 8, 'Espelho Diário de Serviços', border=0, ln=1, align='C')
-    
+    pdf.set_font('Arial', 'B', 19)
+    pdf.set_fill_color(220, 220, 220) 
+    pdf.cell(0, 20, 'Espelho Diário de Serviços', border=3, ln=1, align='C', fill=True)
     pdf.set_font('Arial', '', 10)
     pdf.cell(0, 5, f"Data: {pdf.data_atual}", border=0, ln=1, align='R')
     pdf.cell(0, 5, f"Equipe: {pdf.equipe} - {pdf.chefe}", border=0, ln=1, align='L')
@@ -151,7 +151,7 @@ def desenhar_equipe(pdf, equipe, df_equipe, ordens_manuais, hoje_date):
     pdf.set_font('Arial', 'B', 7)
     pdf.set_fill_color(220, 220, 220) 
     for i in range(len(headers)):
-        pdf.cell(col_widths[i], 6, headers[i], border=1, align='C', fill=True)
+        pdf.cell(col_widths[i], 6, headers[i], border=3, align='C', fill=True)
     pdf.ln()
     
     # =========================================================
@@ -337,7 +337,7 @@ if uploaded_file is not None:
         # =========================================================
         # --- SEÇÃO DE EXPORTAÇÃO E VISUALIZAÇÃO ---
         # =========================================================
-        col1, col2 = st.columns([1.2, 1])
+        col1, col2 = st.columns([2.5, 1])
 
         with col1:
             st.markdown("#### 👁️ Pré-visualização")
