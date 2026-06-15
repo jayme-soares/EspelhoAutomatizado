@@ -5,6 +5,7 @@ import io
 import zipfile
 import base64
 from datetime import datetime
+from streamlit_pdf_viewer import pdf_viewer
 
 # =====================================================================
 # 1. DICIONÁRIOS DE MAPEAMENTO
@@ -385,19 +386,19 @@ if uploaded_file is not None:
         col1, col2 = st.columns([2.5, 1])
 
         with col1:
-            st.markdown("#### Pré-visualização")
+            st.markdown("#### 👁️ Pré-visualização")
             # A pré-visualização agora só mostra as equipes ativas no filtro acima
             equipe_preview = st.selectbox("Selecione a Equipe para visualizar:", sorted(equipes_selecionadas))
 
             if equipe_preview:
                 df_equipe_preview = df_final[df_final['Equipe'] == equipe_preview]
                 
+                # Gera o PDF individual em bytes
                 pdf_bytes_preview = gerar_pdf_individual(equipe_preview, df_equipe_preview, ordens_manuais, hoje_date, data_hoje_str)
-                base64_pdf = base64.b64encode(pdf_bytes_preview).decode('utf-8')
-                # Trocámos o <iframe> por <embed> para evitar o bloqueio de segurança do navegador
-                pdf_display = f'<embed src="data:application/pdf;base64,{base64_pdf}#view=FitH" width="100%" height="600" type="application/pdf">'
-                st.markdown(pdf_display, unsafe_allow_html=True)
-
+                
+                # Renderiza o PDF de forma segura para a nuvem
+                pdf_viewer(pdf_bytes_preview, width=700, height=600)
+                
         with col2:
             st.markdown("#### 🖨️ Exportação dos espelhos (pdf)")
             qtd_geracao = len(equipes_agrupadas_geracao)
