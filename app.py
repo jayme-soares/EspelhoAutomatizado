@@ -394,7 +394,8 @@ if uploaded_file is not None:
                 
                 pdf_bytes_preview = gerar_pdf_individual(equipe_preview, df_equipe_preview, ordens_manuais, hoje_date, data_hoje_str)
                 base64_pdf = base64.b64encode(pdf_bytes_preview).decode('utf-8')
-                pdf_display = f'<iframe src="data:application/pdf;base64,{base64_pdf}#view=FitH" width="100%" height="500" type="application/pdf" style="border: 1px solid #ccc; border-radius: 5px;"></iframe>'
+                # Trocámos o <iframe> por <embed> para evitar o bloqueio de segurança do navegador
+                pdf_display = f'<embed src="data:application/pdf;base64,{base64_pdf}#view=FitH" width="100%" height="600" type="application/pdf">'
                 st.markdown(pdf_display, unsafe_allow_html=True)
 
         with col2:
