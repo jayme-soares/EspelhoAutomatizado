@@ -265,15 +265,15 @@ def desenhar_equipe(pdf, equipe, df_equipe, ordens_manuais, hoje_date):
     pdf.set_xy(115, y_rodape)
     pdf.set_font('Arial', 'B', 8)
     pdf.set_fill_color(220, 220, 220)
-    pdf.cell(145, 6, "OBSERVAÇÕES E ANOTAÇÕES DO ELETRICISTA", border=1, ln=1, align='C', fill=True)
+    pdf.cell(170, 6, "OBSERVAÇÕES E ANOTAÇÕES", border=1, ln=1, align='C', fill=True)
 
-    linhas_pauta = max(5, len(lista_resumo_prioridades) + 1)
+    linhas_pauta = max(7, len(lista_resumo_prioridades) + 5)
     for i in range(linhas_pauta):
         pdf.set_x(115)
         borda = 'LRB' if i == linhas_pauta - 1 else 'LR'
-        pdf.cell(145, 6, "", border=borda, ln=1)
+        pdf.cell(170, 6, "", border=borda, ln=1)
         if i < linhas_pauta - 1:
-            pdf.line(117, pdf.get_y(), 258, pdf.get_y())
+            pdf.line(117, pdf.get_y(), 283, pdf.get_y())
 
 
 def gerar_pdf_individual(equipe, df_equipe, ordens_manuais, hoje_date, data_hoje_str):
